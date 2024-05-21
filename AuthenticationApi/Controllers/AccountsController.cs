@@ -26,47 +26,30 @@ namespace AuthenticationApi.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                // Returning ModelState in a JSON formatted response
+                return BadRequest(new { message = "Invalid data", Details = ModelState });
             }
+
             if (model.Username == null || model.Password == null)
             {
-                return BadRequest("Bad Username/Password. Please check your credentials and try again.");
+                // Returning a plain text error message as a JSON object
+                return BadRequest(new { message = "Bad Username/Password. Please check your credentials and try again." });
             }
 
             var user = await _userService.AuthenticateAsync(model);
-            if (user is null)
+            if (user == null)
             {
-                return BadRequest("Bad Username/Password. Please check your credentials and try again.");
+                // Consistently formatting the error message as JSON
+                return BadRequest(new { message = "Bad Username/Password. Please check your credentials and try again." });
             }
-
-            // Check if it's the first login by examining the MustChangePassword property
-            //var mustChangePassword = user.MustChangePassword;
 
             var token = TokenManager.GenerateWebToken(user, _settings);
             var authResponse = new AuthenticationResponse(user, token);
 
+            // Return a successful authentication response, the object will be serialized to JSON by default
             return Ok(authResponse);
         }
-        //[HttpPost]
-        //public async Task<ActionResult<AuthenticationResponse>> Login(AuthenticationRequest model)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        return BadRequest(ModelState);
-        //    }
-        //    if(model.Username == null || model.Password == null)
-        //    {
-        //        return BadRequest("Bad Username/Password. Please Check your Credentials and Try Again.");
-        //    }
-        //    var user = await _userService.AuthenticateAsync(model);
-        //    if (user is null)
-        //    {
-        //        return BadRequest("Bad Username/Password. Please Check your Credentials and Try Again.");
-        //    }
-        //    var token = TokenManager.GenerateWebToken(user, _settings);
-        //    var authResponse = new AuthenticationResponse(user, token);
-        //    return authResponse;
-        //}
+
 
         // URL: api/accounts/validate
         [HttpGet(template: "validate")]
@@ -80,27 +63,26 @@ namespace AuthenticationApi.Controllers
             return user;
         }
 
-
         [HttpPost("changePassword")]
         public async Task<IActionResult> ChangePassword([FromBody] PasswordChangeModel model)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new { message = "Invalid request.", errors = ModelState.Values.SelectMany(v => v.Errors.Select(b => b.ErrorMessage)) });
             }
 
             if (string.IsNullOrWhiteSpace(model.NewPassword) || model.NewPassword.Length < 6)
             {
-                return BadRequest("New password must be at least 6 characters long.");
+                return BadRequest(new { message = "New password must be at least 6 characters long." });
             }
 
             var result = await _userService.UpdatePassword(model.Username, model.NewPassword);
             if (!result)
             {
-                return BadRequest("Failed to update password. Please ensure the username is correct and try again.");
+                return BadRequest(new { message = "Failed to update password. Please ensure the username is correct and try again." });
             }
 
-            return Ok("Password updated successfully.");
+            return Ok(new { message = "Password updated successfully." });
         }
 
     }

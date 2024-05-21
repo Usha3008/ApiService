@@ -10,7 +10,7 @@ namespace AuthenticationApi.DataAccess
 
         public BaseDataAccess(IConfiguration config)
         {
-            _connectionString = config.GetConnectionString("FinalProjConn");
+            _connectionString = config.GetConnectionString("AZureDataBase");
         }
         protected void OpenConnection()
         {
